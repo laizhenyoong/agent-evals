@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agent-eval-lab"
+version = "0.1.0"
+description = "A tool-using support agent and its evaluation loop"
+requires-python = ">=3.12"
+dependencies = [
+    "arize-phoenix>=15.5.0",
+    "strands-agents[ollama,otel]>=1.47.0",
+]
+
+[tool.setuptools]
+py-modules = ["support_agent"]

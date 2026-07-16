@@ -1,0 +1,4 @@
+.venv/
+.phoenix/
+__pycache__/
+*.egg-info/

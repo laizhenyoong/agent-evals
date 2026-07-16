@@ -1,4 +1,4 @@
-"""Stage 1: a small, deliberately-unpolished customer-support agent.
+"""Stages 1-2: a deliberately-unpolished, traced customer-support agent.
 
 Goal is NOT a perfect agent. We want real trajectories (tool-call sequences)
 with failure modes that later stages can measure. Runs locally on Ollama.
@@ -9,6 +9,9 @@ with failure modes that later stages can measure. Runs locally on Ollama.
 
 from strands import Agent, tool
 from strands.models.ollama import OllamaModel
+from strands.telemetry import StrandsTelemetry
+import atexit
+import os
 
 # --- Fake data ------------------------------------------------------------
 
@@ -26,6 +29,33 @@ ACCOUNTS = {
 
 TICKETS = []      # filled by create_ticket
 ESCALATIONS = []  # filled by escalate
+
+
+# --- Tracing --------------------------------------------------------------
+
+_telemetry: StrandsTelemetry | None = None
+
+
+def configure_tracing() -> None:
+    """Export Strands' built-in OpenTelemetry spans to a local Phoenix server."""
+    global _telemetry
+
+    if _telemetry is not None:
+        return
+
+    collector_endpoint = os.environ.get("PHOENIX_COLLECTOR_ENDPOINT", "http://localhost:6006")
+    trace_endpoint = collector_endpoint.rstrip("/")
+    if not trace_endpoint.endswith("/v1/traces"):
+        trace_endpoint = f"{trace_endpoint}/v1/traces"
+
+    project_name = os.environ.get("PHOENIX_PROJECT_NAME", "customer-support-agent")
+    os.environ.setdefault("OTEL_SERVICE_NAME", "customer-support-agent")
+
+    _telemetry = StrandsTelemetry().setup_otlp_exporter(
+        endpoint=trace_endpoint,
+        headers={"x-project-name": project_name},
+    )
+    atexit.register(_telemetry.tracer_provider.shutdown)
 
 
 # --- Tools ----------------------------------------------------------------
@@ -90,6 +120,7 @@ SYSTEM_PROMPT = "You are a customer support agent. Help the customer using your 
 
 
 def build_agent() -> Agent:
+    configure_tracing()
     model = OllamaModel(host="http://localhost:11434", model_id="qwen3:30b")
     # callback_handler=None: suppress token streaming so we can print a clean trajectory.
     return Agent(
