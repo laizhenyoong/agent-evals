@@ -1,11 +1,11 @@
-"""Small, dependency-free types shared by the Stage 3 evaluation harness."""
+"""Domain models shared by the support-agent evaluation suite."""
 
 from dataclasses import dataclass, field
 from typing import Any
 
 
 @dataclass(frozen=True)
-class ToolExpectation:
+class ToolCallExpectation:
     """A required call, with exact or substring checks for selected arguments."""
 
     name: str
@@ -14,10 +14,10 @@ class ToolExpectation:
 
 
 @dataclass(frozen=True)
-class EvalCase:
-    id: str
+class EvaluationCase:
+    case_id: str
     prompt: str
-    required_tools: tuple[ToolExpectation, ...] = ()
+    required_tools: tuple[ToolCallExpectation, ...] = ()
     forbidden_tools: tuple[str, ...] = ()
     preferred_sequence: tuple[str, ...] = ()
     max_tool_calls: int = 3
@@ -26,20 +26,20 @@ class EvalCase:
 
 
 @dataclass(frozen=True)
-class ToolCall:
+class ObservedToolCall:
     name: str
     arguments: dict[str, Any]
 
 
 @dataclass(frozen=True)
-class RunRecord:
+class EvaluationRun:
     case_id: str
     answer: str
-    tool_calls: tuple[ToolCall, ...]
+    tool_calls: tuple[ObservedToolCall, ...]
 
 
 @dataclass(frozen=True)
-class Score:
+class ScoreResult:
     passed: bool
     score: float
     reasons: tuple[str, ...]

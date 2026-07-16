@@ -16,4 +16,4 @@ dependencies = [
 py-modules = ["support_agent"]
 
 [tool.setuptools.packages.find]
-include = ["evals*"]
+include = ["evaluation*"]

@@ -7,10 +7,16 @@ unsafe path; that should still be a failed agent run.
 
 from collections import Counter
 
-from evals.types import EvalCase, RunRecord, Score, ToolCall, ToolExpectation
+from evaluation.models import (
+    EvaluationCase,
+    EvaluationRun,
+    ObservedToolCall,
+    ScoreResult,
+    ToolCallExpectation,
+)
 
 
-def _matches(call: ToolCall, expected: ToolExpectation) -> bool:
+def _matches(call: ObservedToolCall, expected: ToolCallExpectation) -> bool:
     if call.name != expected.name:
         return False
     if any(call.arguments.get(key) != value for key, value in expected.exact_args.items()):
@@ -21,7 +27,7 @@ def _matches(call: ToolCall, expected: ToolExpectation) -> bool:
     )
 
 
-def deterministic_score(case: EvalCase, run: RunRecord) -> Score:
+def deterministic_score(case: EvaluationCase, run: EvaluationRun) -> ScoreResult:
     """Check required calls and arguments, forbidden calls, bounds, and loops."""
     reasons: list[str] = []
     calls = run.tool_calls
@@ -36,10 +42,10 @@ def deterministic_score(case: EvalCase, run: RunRecord) -> Score:
     duplicate_names = [name for name, count in Counter(call.name for call in calls).items() if count > 1]
     if duplicate_names:
         reasons.append(f"tool loop/retry detected: {', '.join(duplicate_names)}")
-    return Score(not reasons, 1.0 if not reasons else 0.0, tuple(reasons))
+    return ScoreResult(not reasons, 1.0 if not reasons else 0.0, tuple(reasons))
 
 
-def trajectory_score(case: EvalCase, run: RunRecord) -> Score:
+def trajectory_score(case: EvaluationCase, run: EvaluationRun) -> ScoreResult:
     """Score whether the path was economical and followed the intended order."""
     reasons: list[str] = []
     actual = tuple(call.name for call in run.tool_calls)
@@ -58,4 +64,4 @@ def trajectory_score(case: EvalCase, run: RunRecord) -> Score:
     # it makes trajectory inefficiency visible even when a run is otherwise valid.
     if len(actual) != len(case.preferred_sequence):
         reasons.append(f"inefficient path: expected {len(case.preferred_sequence)} calls, got {len(actual)}")
-    return Score(not reasons, 1.0 if not reasons else 0.0, tuple(reasons))
+    return ScoreResult(not reasons, 1.0 if not reasons else 0.0, tuple(reasons))
