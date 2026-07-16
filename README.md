@@ -29,6 +29,44 @@ python support_agent.py
 Open http://localhost:6006 and select the `customer-support-agent` project.
 Each query is one trace, with nested model and tool-call spans.
 
+## Stage 3: Golden set and trajectory evaluation
+
+The Stage 3 suite contains 50 hand-curated customer requests in
+[`evals/dataset.py`](evals/dataset.py). Every case specifies the observable
+contract: required tool calls and arguments, forbidden calls, a maximum tool
+budget, an efficient preferred order, and response facts/tone for qualitative
+grading.
+
+Run deterministic and trajectory scoring against the live local agent:
+
+```sh
+.venv/bin/python -m evals.run
+```
+
+This prints a JSON report and exits non-zero when either the deterministic or
+trajectory pass rate is below 100%, which is intentionally ready for the Stage
+4 CI gate. To write a report file or run one case while iterating:
+
+```sh
+.venv/bin/python -m evals.run --case kb_refund_policy --output eval-report.json
+```
+
+The answer-quality judge is intentionally opt-in: it calls your local Ollama
+server and grades factual correctness, faithfulness to the supplied reference
+facts, and tone. This keeps offline scorer tests repeatable and makes the
+model-based judgement explicit.
+
+```sh
+.venv/bin/python -m evals.run --judge ollama
+```
+
+Set `OLLAMA_HOST` or `EVAL_JUDGE_MODEL` to override its defaults. Run the
+offline scorer tests with:
+
+```sh
+.venv/bin/python -m unittest discover -s tests -v
+```
+
 ### Optional configuration
 
 These defaults work when Phoenix runs locally. Override them when the collector

@@ -31,6 +31,12 @@ TICKETS = []      # filled by create_ticket
 ESCALATIONS = []  # filled by escalate
 
 
+def reset_demo_state() -> None:
+    """Clear mutable fake-service state before an independent evaluation run."""
+    TICKETS.clear()
+    ESCALATIONS.clear()
+
+
 # --- Tracing --------------------------------------------------------------
 
 _telemetry: StrandsTelemetry | None = None
